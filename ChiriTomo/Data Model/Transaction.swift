@@ -11,7 +11,7 @@ import RealmSwift
 
 class Transaction : Object {
     
-    @objc dynamic var year = 19810910
+    @objc dynamic var date = 19810910
     @objc dynamic var amount = 0
     @objc dynamic var name = "transaction"
     @objc dynamic var note = ""

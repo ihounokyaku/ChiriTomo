@@ -26,6 +26,7 @@ class Account : Object {
     @objc dynamic var amount = 0
     @objc dynamic var startingAmount = 0
     @objc dynamic var surplus = 0
+    @objc dynamic var daysEnd = 0400
     
     
     @objc dynamic var accountType = AccountType.daily.rawValue

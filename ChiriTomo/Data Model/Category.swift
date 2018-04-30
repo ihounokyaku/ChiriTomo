@@ -10,7 +10,18 @@ import Foundation
 import RealmSwift
 
 class Category : Object {
-    @objc dynamic var color = "#EDDEC0"
+    @objc dynamic var colorHex = "#EDDEC0"
     @objc dynamic var icon = "noIcon.png"
     @objc dynamic var name = ""
+    
+    var color:UIColor {
+        get {
+            return UIColor(hexString: colorHex)
+        }
+        set {
+            colorHex = String(newValue.hexValue())
+        }
+    }
+    
+    
 }
