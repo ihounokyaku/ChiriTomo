@@ -14,6 +14,7 @@ class NewTransactionVC: UIViewController {
 
     //MARK: - =========IBOUTLETS==========
     
+
     //MARK: Textfields
     @IBOutlet weak var nameField: AkiraTextField!
     @IBOutlet weak var amountField: AkiraTextField!
@@ -22,6 +23,10 @@ class NewTransactionVC: UIViewController {
     @IBOutlet weak var subcategoryPicker: UIPickerView!
     @IBOutlet weak var categoryPicker: UIPickerView!
     @IBOutlet weak var datePicker: UIDatePicker!
+    
+    //MARK: TableViews
+    @IBOutlet weak var autofillTable: UITableView!
+    @IBOutlet weak var quickSelectTable: UITableView!
     
     //MARK: Buttons
     @IBOutlet weak var plusMinusControl: UISegmentedControl!
@@ -33,21 +38,32 @@ class NewTransactionVC: UIViewController {
     //MARK: Managers
     var prefs = Prefs()
     
-    //MARK: Other Variables
+    //MARK: LISTS
     var subcategories = List<Subcategory>()
-    var transaction = Transaction()
+    var regularTransactions = [RegularTransaction]()
+    var filteredPreditions = [String]()
+    
+    //MARK: Other Variables
+    
+    var transaction:Transaction?
+    var regularTransaction:RegularTransaction?
     var mainView:MainViewController!
+
     
     
     //MARK: - =========SETUP==========
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // -- Delegates
+        // -- DELEGATES/DATASOURCES
         self.categoryPicker.dataSource = self
         self.categoryPicker.delegate = self
         self.subcategoryPicker.delegate = self
         self.subcategoryPicker.dataSource = self
+        self.autofillTable.delegate = self
+        self.autofillTable.dataSource = self
+        self.quickSelectTable.dataSource = self
+        self.quickSelectTable.delegate = self
         
         // -- RefreshPicker
         self.refreshSubcategories()
@@ -63,15 +79,17 @@ class NewTransactionVC: UIViewController {
         self.datePicker.maximumDate = Date()
         self.datePicker.minimumDate = Date().addingTimeInterval(Double(-dateFloor * 60 * 60 * 24))
         
+        
+        //-- Set Regular Transactions
+        self.regularTransactions = self.prefs.dataManager.regularTransactions()
+        
         // -- Update UI
         self.rememberSwitch.onTintColor = UIColor(hexString: "#77B05E")
+        self.autofillTable.isHidden = true
+        self.setUIFromTransaction()
         self.toggleSave()
     }
     
-    //MARK: - ==========TEXT ENTRY=============
-    
-    
-
     //MARK: - ==========CANCEL/SAVE BUTTONS=============
     
     @IBAction func cancelPressed(_ sender: Any) {
@@ -79,25 +97,48 @@ class NewTransactionVC: UIViewController {
     }
     
     @IBAction func savePressed(_ sender: Any) {
-        
-        //-- set amount
+ 
+        //-- SET VARIABLES
         var amount = -Int(self.amountField.text!)!
         if plusMinusControl.selectedSegmentIndex == 1 {
             amount = Int(self.amountField.text!)!
         }
         
-        //-- save transaction
-        self.prefs.dataManager.newUpdateTransaction(transaction: self.transaction, name: self.nameField.text!, amount: amount, note: "", date: self.datePicker.date, category: self.subcategories[self.subcategoryPicker.selectedRow(inComponent: 0)])
+        
+        let category = self.subcategories[self.subcategoryPicker.selectedRow(inComponent: 0)]
+        let daysEnd = self.prefs.dataManager.account.daysEnd
+        //TODO: adjust for acct types
+        let todaysDate = Date().adjusted(by: daysEnd).dateInt()
         
         
         //-- Make sure total is updated
         self.prefs.dataManager.updateTotal()
         
+        //--if updating transaction add amount to surplus
+        if let transaction = self.transaction, transaction.date < todaysDate {
+            self.prefs.dataManager.adjustSurplus(by: -transaction.amount)
+        }
         //-- if transaction is earlier than today update surplus
-        let daysEnd = self.prefs.dataManager.account.daysEnd
-        if self.datePicker.date.adjusted(by: daysEnd).dateInt() < Date().adjusted(by: daysEnd).dateInt() {
+        if self.datePicker.date.adjusted(by: daysEnd).dateInt() < todaysDate {
             self.prefs.dataManager.adjustSurplus(by: amount)
         }
+        
+        //-- save/update transaction
+        if let transaction = self.transaction {
+            self.prefs.dataManager.UpdateTransaction(transaction: transaction, name: self.nameField.text!, amount: amount, note: "", date: self.datePicker.date, category: category)
+        } else {
+            self.prefs.dataManager.newTransaction(name: self.nameField.text!, amount: amount, note: "", date: self.datePicker.date, category: category)
+        }
+    
+        //-- save/update regtran if necessary
+        if self.rememberSwitch.isOn {
+            if let regTran = self.prefs.dataManager.regularTransaction(withName: self.nameField.text!) {
+                self.prefs.dataManager.updateRegularTransaction(transaction: regTran, name: self.nameField.text!, amount: amount, category: category)
+            } else {
+                self.prefs.dataManager.newRegularTransaction(name: self.nameField.text!, amount: amount, category: category)
+            }
+        }
+    
         
         //-- Dismiss view
         self.dismiss(animated: true) {
@@ -107,13 +148,45 @@ class NewTransactionVC: UIViewController {
     }
     
     //MARK: - ==========UI UPDATES=============
-    @IBAction func textDidChange(_ sender: Any) {
+    @IBAction func textDidChange(_ sender: UITextField) {
         self.toggleSave()
+        if sender == self.nameField{
+            showHideAutofillTable()
+        }
+    }
+    
+    //MARK: - AUTOFILL UI
+    func setUIFromTransaction() {
+        if let transaction = self.transaction {
+            self.nameField.text = transaction.name
+            self.setAmount(from: transaction.amount)
+            self.setCategory(fromSubcategory: transaction.category.first!)
+            self.datePicker.date = transaction.fullDate
+        }
+    }
+    
+    func setAmount(from amount:Int) {
+        self.amountField.text = String(abs(amount))
+        
+        if amount <= 0  {
+            self.plusMinusControl.selectedSegmentIndex = 0
+        } else {
+            self.plusMinusControl.selectedSegmentIndex = 1
+        }
+    }
+    
+    func setCategory(fromSubcategory subcategory:Subcategory) {
+        
+        let mainCategory = subcategory.parentCategory.first!
+        self.categoryPicker.selectRow(self.prefs.dataManager.categories.index(of: mainCategory)!, inComponent: 0, animated: true)
+        self.refreshSubcategories()
+        self.subcategoryPicker.selectRow(self.subcategories.index(of: subcategory)!, inComponent: 0, animated: true)
     }
     
     //MARK: Hide Keyboard
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         self.view.endEditing(true)
+        self.autofillTable.isHidden = true
     }
     
     //MARK: TOGGLE BUTTONS
@@ -136,7 +209,7 @@ extension NewTransactionVC : UIPickerViewDelegate, UIPickerViewDataSource {
         if pickerView == self.categoryPicker {
             return self.prefs.dataManager.categories.count
         } else {
-            return subcategories.count
+            return self.subcategories.count
         }
     }
     
@@ -169,3 +242,85 @@ extension NewTransactionVC : UIPickerViewDelegate, UIPickerViewDataSource {
     }
     
 }
+
+//MARK: - ========== TABLE STUFF =======================
+
+extension NewTransactionVC : UITableViewDelegate, UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if tableView == self.autofillTable {
+            return self.filteredPreditions.count
+        } else {
+            if self.regularTransactions.count < 10 {
+                return self.regularTransactions.count
+            } else {
+                return 10
+            }
+        }
+       
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "CandidateCell")!
+        
+        if tableView == self.autofillTable {
+            cell.textLabel?.text = self.filteredPreditions[indexPath.row]
+        } else {
+            cell.textLabel?.text = self.regularTransactions[indexPath.row].name
+            cell.backgroundColor = self.regularTransactions[indexPath.row].category.first!.parentCategory.first!.color.withAlphaComponent(0.7)
+            cell.textLabel?.textColor = UIColor(contrastingBlackOrWhiteColorOn: cell.backgroundColor!, isFlat: true)
+        }
+        
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        var regTran:RegularTransaction!
+        if tableView == self.autofillTable {
+            regTran = self.prefs.dataManager.regularTransaction(withName: self.filteredPreditions[indexPath.row])!
+            self.autofillTable.isHidden = true
+        } else {
+            regTran = self.regularTransactions[indexPath.row]
+        }
+        
+
+        //-- UPDATE UI
+        self.setCategory(fromSubcategory: regTran.category.first!)
+        
+        self.nameField.text = regTran.name
+        self.setAmount(from: regTran.amount)
+        self.toggleSave()
+        tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    func showHideAutofillTable() {
+        
+        //-- Filter predictions
+        self.filteredPreditions = self.regularTransactions.filter({ (item) -> Bool in
+            if item.name.lowercased().contains(self.nameField.text!.lowercased()) {
+                print(item.name.lowercased() + " contains " + self.nameField.text!.lowercased())
+            }
+            return item.name.lowercased().contains(self.nameField.text!.lowercased())
+        }).map({return $0.name})
+        
+        //-- If predictions exist display table
+        if self.filteredPreditions.count > 0 {
+            self.autofillTable.reloadData()
+            
+            //-- resize table
+            var frame = self.autofillTable.frame
+            if self.autofillTable.contentSize.height < 120 {
+                frame.size.height = self.autofillTable.contentSize.height
+            } else {
+                frame.size.height = 100
+            }
+            self.autofillTable.frame = frame
+
+            self.autofillTable.isHidden = false
+        } else {
+            self.autofillTable.isHidden = true
+        }
+    }
+}
+
+
+

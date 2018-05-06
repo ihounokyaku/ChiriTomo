@@ -15,6 +15,7 @@ class Transaction : Object {
     @objc dynamic var amount = 0
     @objc dynamic var name = "transaction"
     @objc dynamic var note = ""
+    @objc dynamic var fullDate = Date()
     
     var account = LinkingObjects(fromType: Account.self, property: "transactions")
     var category = LinkingObjects(fromType: Subcategory.self, property: "transactions")

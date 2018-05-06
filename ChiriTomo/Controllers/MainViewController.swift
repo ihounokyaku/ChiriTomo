@@ -90,7 +90,7 @@ class MainViewController: UIViewController {
             //-- Set transaction if edit
             if self.transactionSelected != nil {
                 destinationVC.transaction = self.transactionSelected!
-                transactionSelected = nil
+                self.transactionSelected = nil
             }
         }
         
@@ -119,10 +119,7 @@ extension MainViewController : UITableViewDelegate, UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(withIdentifier: "TransactionCell") as! TransactionCell
         
         let date = self.prefs.dataManager.transactionKeys[indexPath.section]
-        guard let dateothingo = self.prefs.dataManager.transactions[date]! as? [String:Any] else {fatalError("couldn't unwrap dictionary for \(date)")}
-        guard let transactions = dateothingo["Transactions"] as? [Transaction] else {fatalError("couldn't get transactions from \(dateothingo)")}
-        
-        let transaction = transactions[indexPath.row]
+        let transaction = self.transactions(fromDateInt: date)[indexPath.row]
         
         
         // -- get amount string
@@ -180,6 +177,20 @@ extension MainViewController : UITableViewDelegate, UITableViewDataSource {
         cell.backgroundColor = UIColor(hexString: "#423F3F")
         
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        let date = self.prefs.dataManager.transactionKeys[indexPath.section]
+        let transaction = self.transactions(fromDateInt: date)[indexPath.row]
+        self.transactionSelected = transaction
+        self.presentView(withIdentifier: "NewTransaction")
+    }
+    
+    func transactions(fromDateInt date:Int)-> [Transaction] {
+        guard let dateothingo = self.prefs.dataManager.transactions[date]! as? [String:Any] else {fatalError("couldn't unwrap dictionary for \(date)")}
+        guard let transactions = dateothingo["Transactions"] as? [Transaction] else {fatalError("couldn't get transactions from \(dateothingo)")}
+        return transactions
     }
     
     

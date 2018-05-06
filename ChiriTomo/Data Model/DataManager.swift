@@ -34,7 +34,7 @@ class DataManager:NSObject {
         }
         
         //-- Set Account 
-        if let accountName = self.prefs.value(forKey: "account") as? String, let acct = self.getAccount(withName: accountName) {
+        if let accountName = self.prefs.value(forKey: "account") as? String, let acct = self.account(withName: accountName) {
             self.account = acct
         } else {
             //TODO: deal with new account
@@ -42,10 +42,13 @@ class DataManager:NSObject {
             self.prefs.set(self.account.name, forKey: "account")
         }
         
+        
         //-- Update transactions and total
         self.sortTransactions()
         self.updateTotal()
     }
+    
+    //MARK: - ==============SORT RESULTS===============
     
     func sortTransactions() {
     
@@ -149,6 +152,12 @@ class DataManager:NSObject {
         
     }
     
+    func regularTransactions() -> [RegularTransaction] {
+        return self.account.regularTransactions.sorted(by: {$0.numberOfRecentTransactions > $1.numberOfRecentTransactions})
+    }
+    
+    
+
     //MARK: GET DATES
     func dates(from startDate:Date, to endDateInt:Int)-> [Int] {
         var dates = [Int]()
@@ -169,7 +178,9 @@ class DataManager:NSObject {
         return dates
     }
     
-    //MARK: - READWRITE
+    //MARK: - =====================CRUD===========================
+    
+    //MARK: - CREATE
     func save(object:Object) {
         do {
             try self.realm.write {
@@ -180,34 +191,6 @@ class DataManager:NSObject {
         }
     }
     
-    func deleteObject(object:Object) {
-        do {
-            try self.realm.write {
-                realm.delete(object)
-            }
-        } catch {
-            print("error deleting \(object) \n \(error)")
-        }
-    }
-    
-    
-    //MARK: - UPDATE
-    func adjustSurplus(by amount:Int) {
-        do {
-            try self.realm.write {
-                self.account.surplus += amount
-            }
-        } catch {
-            print("could not update total \(error)")
-        }
-    }
-    
-    //MARK: - QUERY
-    func getAccount(withName name:String)-> Account? {
-        return self.realm.objects(Account.self).filter("name == %@", name).first
-    }
-    
-    //MARK: - CREATE
     func newAccount(name:String, amount:Int, startingAmount:Int, startDate:Int, accountType:AccountType, currency:Currency)-> Account {
         let account = Account()
         account.name = name
@@ -238,20 +221,117 @@ class DataManager:NSObject {
         self.save(object: category)
     }
     
-    func newUpdateTransaction(transaction:Transaction, name:String, amount:Int, note:String, date:Date, category:Subcategory) {
+    func newTransaction(name:String, amount:Int, note:String, date:Date, category:Subcategory) {
+        let transaction = Transaction()
+        transaction.name = name
+        transaction.amount = amount
+        transaction.note = note
+        transaction.fullDate = date.adjusted(by: self.account.daysEnd)
+        transaction.date = date.dateInt(adjustedBy: self.account.daysEnd)
+        self.save(object: transaction)
+        do {
+            try realm.write {
+                self.account.transactions.append(transaction)
+                category.transactions.append(transaction)
+            }
+        } catch {
+            print("could not append transaction \(error)")
+        }
+    }
+    
+    func newRegularTransaction (name:String, amount:Int, category:Subcategory) {
+        let transaction = RegularTransaction()
+        transaction.name = name
+        transaction.amount = amount
+        
+        do {
+            try realm.write {
+                self.account.regularTransactions.append(transaction)
+                category.regularTransactions.append(transaction)
+            }
+        } catch {
+            print("could not append transaction \(error)")
+        }
+    }
+    
+    //MARK: - READ
+    func account(withName name:String)-> Account? {
+        return self.realm.objects(Account.self).filter("name == %@", name).first
+    }
+    
+    func regularTransaction(withName name:String)-> RegularTransaction? {
+        return self.account.regularTransactions.filter("name == %@", name).first
+    }
+    
+    //MARK: - CREATE
+    
+    
+    //MARK: - UPDATE
+    func adjustSurplus(by amount:Int) {
+        do {
+            try self.realm.write {
+                self.account.surplus += amount
+            }
+        } catch {
+            print("could not update total \(error)")
+        }
+    }
+    
+    func UpdateTransaction(transaction:Transaction, name:String, amount:Int, note:String, date:Date, category:Subcategory) {
         do {
             try realm.write {
                 transaction.name = name
                 transaction.amount = amount
                 transaction.note = note
+                transaction.fullDate = date
                 transaction.date = date.dateInt(adjustedBy: self.account.daysEnd)
-                category.transactions.append(transaction)
-                self.account.transactions.append(transaction)
+                if !category.transactions.contains(transaction) {
+                    if let oldCategory = transaction.category.first {
+                        oldCategory.transactions.remove(at: oldCategory.transactions.index(of: transaction)!)
+                    }
+                    category.transactions.append(transaction)
+                }
             }
         } catch {
-           print("error writing transaction \n\(error)")
+            print("error writing transaction \n\(error)")
         }
     }
+    
+    func updateRegularTransaction(transaction:RegularTransaction, name:String, amount:Int, category:Subcategory) {
+        
+        do {
+            try realm.write {
+                transaction.name = name
+                transaction.amount = amount
+                
+                if !category.regularTransactions.contains(transaction) {
+                    if let oldCategory = transaction.category.first {
+                        oldCategory.regularTransactions.remove(at: oldCategory.regularTransactions.index(of: transaction)!)
+                    }
+                    category.regularTransactions.append(transaction)
+                }
+            }
+        } catch {
+            print("error writing transaction \n\(error)")
+        }
+    }
+    
+    func appendTransactionToRegular(transaction:Transaction) {
+        
+    }
+    
+    //MARK: - DESTROY
+    func deleteObject(object:Object) {
+        do {
+            try self.realm.write {
+                realm.delete(object)
+            }
+        } catch {
+            print("error deleting \(object) \n \(error)")
+        }
+    }
+    
+    
     
     //MARK: - POPULATE
     func populateCategories() {

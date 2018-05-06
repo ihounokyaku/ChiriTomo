@@ -52,6 +52,7 @@ class Account : Object {
     }
     
     let transactions = List<Transaction>()
+    let regularTransactions = List<RegularTransaction>()
     
     
 }
