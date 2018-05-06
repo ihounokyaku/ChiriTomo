@@ -26,16 +26,18 @@ class NewTransactionVC: UIViewController {
     //MARK: Buttons
     @IBOutlet weak var plusMinusControl: UISegmentedControl!
     @IBOutlet weak var saveButton: UIButton!
+    @IBOutlet weak var rememberSwitch: UISwitch!
     
     //MARK: - =========VARIABLES==========
     
     //MARK: Managers
-    let dataManager = DataManager()
-    let prefs = Prefs()
+    var prefs = Prefs()
     
     //MARK: Other Variables
     var subcategories = List<Subcategory>()
     var transaction = Transaction()
+    var mainView:MainViewController!
+    
     
     //MARK: - =========SETUP==========
     override func viewDidLoad() {
@@ -52,7 +54,7 @@ class NewTransactionVC: UIViewController {
         
         // -- Set Date limits
         var dateFloor = 30
-        if self.prefs.account.type == .monthly {
+        if self.prefs.dataManager.account.type == .monthly {
             dateFloor = 120
             self.datePicker.datePickerMode = .date
         } else {
@@ -62,6 +64,7 @@ class NewTransactionVC: UIViewController {
         self.datePicker.minimumDate = Date().addingTimeInterval(Double(-dateFloor * 60 * 60 * 24))
         
         // -- Update UI
+        self.rememberSwitch.onTintColor = UIColor(hexString: "#77B05E")
         self.toggleSave()
     }
     
@@ -84,9 +87,23 @@ class NewTransactionVC: UIViewController {
         }
         
         //-- save transaction
-        self.dataManager.newUpdateTransaction(transaction: self.transaction, name: self.nameField.text!, amount: amount, note: "", date: self.datePicker.date.dateInt(adjustedBy: self.prefs.account.daysEnd), account: self.prefs.account, category: self.subcategories[self.subcategoryPicker.selectedRow(inComponent: 0)])
-        self.dismiss(animated: true, completion: nil)
-     
+        self.prefs.dataManager.newUpdateTransaction(transaction: self.transaction, name: self.nameField.text!, amount: amount, note: "", date: self.datePicker.date, category: self.subcategories[self.subcategoryPicker.selectedRow(inComponent: 0)])
+        
+        
+        //-- Make sure total is updated
+        self.prefs.dataManager.updateTotal()
+        
+        //-- if transaction is earlier than today update surplus
+        let daysEnd = self.prefs.dataManager.account.daysEnd
+        if self.datePicker.date.adjusted(by: daysEnd).dateInt() < Date().adjusted(by: daysEnd).dateInt() {
+            self.prefs.dataManager.adjustSurplus(by: amount)
+        }
+        
+        //-- Dismiss view
+        self.dismiss(animated: true) {
+            self.mainView.refresh()
+            
+        }
     }
     
     //MARK: - ==========UI UPDATES=============
@@ -117,7 +134,7 @@ extension NewTransactionVC : UIPickerViewDelegate, UIPickerViewDataSource {
     
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
         if pickerView == self.categoryPicker {
-            return self.dataManager.categories.count
+            return self.prefs.dataManager.categories.count
         } else {
             return subcategories.count
         }
@@ -126,8 +143,8 @@ extension NewTransactionVC : UIPickerViewDelegate, UIPickerViewDataSource {
     func pickerView(_ pickerView: UIPickerView, viewForRow row: Int, forComponent component: Int, reusing view: UIView?) -> UIView {
         let label = UILabel()
         if pickerView == self.categoryPicker {
-            label.text = self.dataManager.categories[row].name
-            label.backgroundColor = self.dataManager.categories[row].color
+            label.text = self.prefs.dataManager.categories[row].name
+            label.backgroundColor = self.prefs.dataManager.categories[row].color
         } else {
             label.text = self.subcategories[row].name
             label.backgroundColor = self.subcategories[row].color.darken(byPercentage: CGFloat(Double(row) * 0.1))
@@ -146,7 +163,7 @@ extension NewTransactionVC : UIPickerViewDelegate, UIPickerViewDataSource {
     //MARK: - REFRESH PICKERVIEW
     
     func refreshSubcategories() {
-        self.subcategories = self.dataManager.categories[self.categoryPicker.selectedRow(inComponent: 0)].subcategories
+        self.subcategories = self.prefs.dataManager.categories[self.categoryPicker.selectedRow(inComponent: 0)].subcategories
         self.subcategoryPicker.reloadAllComponents()
         self.subcategoryPicker.selectRow(0, inComponent: 0, animated: true)
     }

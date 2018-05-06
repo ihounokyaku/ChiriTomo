@@ -11,13 +11,17 @@ import RealmSwift
 import ChameleonFramework
 
 class DataManager:NSObject {
-    
+    //MARK: VARIABLES
     let realm = try! Realm()
+    let prefs = UserDefaults.standard
+    var account:Account!
     
     
     //MARK: RESULTS
     var categories: Results<MainCategory>!
-    
+    var transactionsUnsorted: Results<Transaction>!
+    var transactions = [Int:NSMutableDictionary]()
+    var transactionKeys = [Int]()
     
     //MARK: - INIT
     override init() {
@@ -30,9 +34,140 @@ class DataManager:NSObject {
         }
         
         //-- Set Account 
+        if let accountName = self.prefs.value(forKey: "account") as? String, let acct = self.getAccount(withName: accountName) {
+            self.account = acct
+        } else {
+            //TODO: deal with new account
+            self.account = self.newAccount(name: "TestAccount", amount: 500, startingAmount: 0, startDate:Date().addingTimeInterval(-45 * 24 * 60 * 60).dateInt(), accountType: .daily, currency: .THB)
+            self.prefs.set(self.account.name, forKey: "account")
+        }
+        
+        //-- Update transactions and total
+        self.sortTransactions()
+        self.updateTotal()
+    }
+    
+    func sortTransactions() {
+    
+        //-- Adjust arrays
+        var numberOfDays = 30
+        
+        //TODO: Adjust for other account types
+
+        //-- empty arrays
+        self.transactions = [:]
+        self.transactionKeys = []
+        
+        //-- get adjusted start and end dates
+        let endDate = Date().adjusted(by: self.account.daysEnd)
+        
+        //TODO: - Figure in the start date
+        let startDate = endDate.addingTimeInterval(Double(-numberOfDays * 24 * 60 * 60))
+        self.transactionKeys = self.dates(from: startDate, to: endDate.dateInt())
+        
+        
+        //-- get all transactions within date range
+         self.transactionsUnsorted = self.account.transactions.filter("date >= %i", startDate.dateInt()).sorted(byKeyPath: "date", ascending: false)
+        
+        //-- Fill dic
+        for dateInt in self.transactionKeys {
+            self.transactions[dateInt] = ["Transactions":[Transaction](), "Total":0]
+        }
+        
+        self.transactionKeys = self.transactionKeys.sorted(by: {($0 > $1)})
+
+        //-- Fill in transaction info
+        for transaction in transactionsUnsorted {
+            
+            var date = transaction.date
+            //TODO - Adjust for other types
+            
+            //-- append to transactions
+            var transArray = self.transactions[date]!["Transactions"] as? [Transaction] ?? [Transaction]()
+            transArray.append(transaction)
+            self.transactions[date]!["Transactions"] = transArray
+
+            //-- adjust amount
+            let amount = self.transactions[date]!["Total"] as? Int ?? 0
+           
+            self.transactions[date]!["Total"] = amount + transaction.amount
+        }
         
     }
     
+    func updateTotal(all:Bool = false) {
+        //-- check if amount needs updating
+        let today = Date().adjusted(by: self.account.daysEnd).dateInt()
+        //-- TODO: - Adjust for different typess
+        if self.account.lastUpdated < today || all {
+
+            // -- filter by date
+            var startDate:Date!
+            if all {
+                startDate = self.account.startDate.toDate()
+            } else {
+                startDate = self.account.lastUpdated.toDate()
+            }
+            let dates = self.dates(from: startDate, to: today)
+            var amountByDate = [Int:Int]()
+            
+            //-- Fill in all dates
+            
+            for date in dates {
+                if date < today {
+                    amountByDate[date] = self.account.amount
+                }
+            }
+            
+            //-- adjust for transactions
+            let transactions = self.account.transactions.filter("(date >= %i) AND (date < %i)", startDate.dateInt(), today)
+            
+            for transaction in transactions {
+                let amount = amountByDate[transaction.date] ?? self.account.amount
+                amountByDate[transaction.date] = amount + transaction.amount
+            }
+            var totalSurplus = self.account.surplus
+            if all {
+                totalSurplus = 0
+            }
+            
+            //-- add total
+            for (_, amount) in amountByDate {
+                totalSurplus += amount
+            }
+            
+            //-- update Account
+            do {
+                try realm.write {
+                    self.account.surplus = totalSurplus
+                    self.account.lastUpdated = today
+                }
+            } catch {
+                print("couldn't write to account \(error)")
+            }
+        }
+        
+    }
+    
+    //MARK: GET DATES
+    func dates(from startDate:Date, to endDateInt:Int)-> [Int] {
+        var dates = [Int]()
+        
+        //-- get starting dates
+        var date = startDate
+        var dateInt = startDate.dateInt()
+        
+        while dateInt <= endDateInt {
+            //-- add to array
+            dates.append(dateInt)
+            
+            //-- todo sort by section
+            date = date.addingTimeInterval(60 * 60 * 24)
+            dateInt = date.dateInt()
+        }
+        
+        return dates
+    }
     
     //MARK: - READWRITE
     func save(object:Object) {
@@ -47,11 +182,23 @@ class DataManager:NSObject {
     
     func deleteObject(object:Object) {
         do {
-            try realm.write {
+            try self.realm.write {
                 realm.delete(object)
             }
         } catch {
             print("error deleting \(object) \n \(error)")
+        }
+    }
+    
+    
+    //MARK: - UPDATE
+    func adjustSurplus(by amount:Int) {
+        do {
+            try self.realm.write {
+                self.account.surplus += amount
+            }
+        } catch {
+            print("could not update total \(error)")
         }
     }
     
@@ -61,13 +208,15 @@ class DataManager:NSObject {
     }
     
     //MARK: - CREATE
-    func newAccount(name:String, amount:Int, startingAmount:Int, accountType:AccountType, currency:Currency)-> Account {
+    func newAccount(name:String, amount:Int, startingAmount:Int, startDate:Int, accountType:AccountType, currency:Currency)-> Account {
         let account = Account()
         account.name = name
         account.amount = amount
         account.startingAmount = startingAmount
+        account.startDate = startDate
         account.type = accountType
         account.currency = currency
+        account.lastUpdated = startDate
         self.save(object: account)
         
         return account
@@ -89,15 +238,15 @@ class DataManager:NSObject {
         self.save(object: category)
     }
     
-    func newUpdateTransaction(transaction:Transaction, name:String, amount:Int, note:String, date:Int, account:Account, category:Subcategory) {
+    func newUpdateTransaction(transaction:Transaction, name:String, amount:Int, note:String, date:Date, category:Subcategory) {
         do {
             try realm.write {
                 transaction.name = name
                 transaction.amount = amount
                 transaction.note = note
-                transaction.date = date
+                transaction.date = date.dateInt(adjustedBy: self.account.daysEnd)
                 category.transactions.append(transaction)
-                account.transactions.append(transaction)
+                self.account.transactions.append(transaction)
             }
         } catch {
            print("error writing transaction \n\(error)")

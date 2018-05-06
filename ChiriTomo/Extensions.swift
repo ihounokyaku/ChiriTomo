@@ -9,6 +9,8 @@
 import Foundation
 import UIKit
 
+
+//MARK: - =============UICOLOR=====================
 extension UIColor {
     convenience init(hexString: String) {
         let hex = hexString.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
@@ -29,6 +31,7 @@ extension UIColor {
     }
 }
 
+//MARK: - =============DATE=====================
 extension Date {
     func components()-> [Int] {
         let calendar = NSCalendar.current
@@ -43,14 +46,26 @@ extension Date {
     func dateInt(adjustedBy daysEnd:Int? = nil)-> Int {
         var components = self.components()
         
-        if let end = daysEnd, [components[3], components[4]].merge() < end {
-           components = self.addingTimeInterval(Double(-60 * 60 * 12)).components()
+        if let end = daysEnd {
+           components = self.adjusted(by: end).components()
         }
         
        return [components[0], components[1], components[2]].merge()
     }
+    
+    func adjusted(by daysEnd:Int)-> Date {
+        var components = self.components()
+        var date = self
+        if [components[3], components[4]].merge() < daysEnd {
+            date = self.addingTimeInterval(Double(-60 * 60 * 12))
+        }
+        
+        return date
+    }
 }
 
+
+//MARK: - =============ARRAY====================
 extension Array where Element == Int{
     func merge()-> Int {
         var fullString = ""
@@ -63,5 +78,55 @@ extension Array where Element == Int{
             fullString += intString
         }
         return Int(fullString)!
+    }
+}
+
+
+//MARK: - =============STRING===================
+
+extension String {
+    func subString(from startIndex:Int, to endIndex:Int)-> String {
+        let start = self.index(self.startIndex, offsetBy: startIndex)
+        let end = self.index(self.startIndex, offsetBy: endIndex)
+        let range = start...end
+        
+        let mySubstring = self[range]
+        return String(mySubstring)
+    }
+    func date(format:String = "yyyy-MM-dd")-> Date? {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = format
+        return dateFormatter.date(from:self)
+    }
+}
+
+//MARK: - =============INT===================
+extension Int {
+    func toDateString()-> String {
+        let str = String(self)
+        var dateString = ""
+        if self > 2000 {
+            dateString += str.subString(from: 0, to: 3)
+        }
+        if self > 200000 {
+            dateString += "-" + str.subString(from: 4, to: 5)
+        }
+        if self > 20000100 {
+             dateString += "-" + str.subString(from: 6, to: 7)
+        }
+        return dateString
+    }
+    
+    func toDate()-> Date {
+        var dateString = self.toDateString()
+        
+        
+        if dateString.count == 7 {
+            dateString += "-01"
+        } else if dateString.count == 4 {
+            dateString += "-01"
+        }
+        
+        return dateString.date() ?? Date()
     }
 }

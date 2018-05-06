@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		3590B6F46925F98EE3CB2153 /* Pods_ChiriTomo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 94F8A9DB3DA34470E4F07C3B /* Pods_ChiriTomo.framework */; };
+		C418E75F209D927100B1E3A3 /* TransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = C418E75D209D927100B1E3A3 /* TransactionCell.swift */; };
+		C418E760209D927100B1E3A3 /* TransactionCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = C418E75E209D927100B1E3A3 /* TransactionCell.xib */; };
 		C45093082090CC5600C95826 /* RegularTransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45093072090CC5600C95826 /* RegularTransaction.swift */; };
 		C450930A2090D55E00C95826 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45093092090D55E00C95826 /* DataManager.swift */; };
 		C450930C2090D65100C95826 /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C450930B2090D65100C95826 /* Prefs.swift */; };
@@ -29,6 +31,8 @@
 		2A3DDC1A9B535655C7059C0B /* Pods-ChiriTomo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ChiriTomo.release.xcconfig"; path = "Pods/Target Support Files/Pods-ChiriTomo/Pods-ChiriTomo.release.xcconfig"; sourceTree = "<group>"; };
 		4F8254CA58BC70F6BB5DED2E /* Pods-ChiriTomo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ChiriTomo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-ChiriTomo/Pods-ChiriTomo.debug.xcconfig"; sourceTree = "<group>"; };
 		94F8A9DB3DA34470E4F07C3B /* Pods_ChiriTomo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ChiriTomo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C418E75D209D927100B1E3A3 /* TransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCell.swift; sourceTree = "<group>"; };
+		C418E75E209D927100B1E3A3 /* TransactionCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = TransactionCell.xib; sourceTree = "<group>"; };
 		C45093072090CC5600C95826 /* RegularTransaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegularTransaction.swift; sourceTree = "<group>"; };
 		C45093092090D55E00C95826 /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
 		C450930B2090D65100C95826 /* Prefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prefs.swift; sourceTree = "<group>"; };
@@ -69,6 +73,15 @@
 			name = Pods;
 			sourceTree = "<group>";
 		};
+		C418E75C209D924300B1E3A3 /* Custom Views */ = {
+			isa = PBXGroup;
+			children = (
+				C418E75D209D927100B1E3A3 /* TransactionCell.swift */,
+				C418E75E209D927100B1E3A3 /* TransactionCell.xib */,
+			);
+			path = "Custom Views";
+			sourceTree = "<group>";
+		};
 		C422EA3A2092042C001F9B62 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
@@ -101,6 +114,7 @@
 			children = (
 				C4CCB3042090BACF0021DCD5 /* AppDelegate.swift */,
 				C4CCB3192090BF9C0021DCD5 /* Extensions.swift */,
+				C418E75C209D924300B1E3A3 /* Custom Views */,
 				C450930B2090D65100C95826 /* Prefs.swift */,
 				C4CCB3082090BAD00021DCD5 /* Main.storyboard */,
 				C422EA3A2092042C001F9B62 /* Controllers */,
@@ -198,6 +212,7 @@
 			files = (
 				C4CCB30F2090BAD00021DCD5 /* LaunchScreen.storyboard in Resources */,
 				C4CCB30C2090BAD00021DCD5 /* Assets.xcassets in Resources */,
+				C418E760209D927100B1E3A3 /* TransactionCell.xib in Resources */,
 				C4CCB30A2090BAD00021DCD5 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -212,6 +227,7 @@
 			);
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-ChiriTomo/Pods-ChiriTomo-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/CCAutocomplete/CCAutocomplete.framework",
 				"${BUILT_PRODUCTS_DIR}/ChameleonFramework/ChameleonFramework.framework",
 				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
 				"${BUILT_PRODUCTS_DIR}/RealmSwift/RealmSwift.framework",
@@ -219,6 +235,7 @@
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/CCAutocomplete.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ChameleonFramework.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RealmSwift.framework",
@@ -278,6 +295,7 @@
 				C4CCB3242090C7C80021DCD5 /* Subcategory.swift in Sources */,
 				C45093082090CC5600C95826 /* RegularTransaction.swift in Sources */,
 				C4CCB3222090C6780021DCD5 /* Main Category.swift in Sources */,
+				C418E75F209D927100B1E3A3 /* TransactionCell.swift in Sources */,
 				C4CCB3172090BE450021DCD5 /* Account.swift in Sources */,
 				C48A5A122092155700AEDB2A /* NewTransactionVC.swift in Sources */,
 				C4CCB31A2090BF9C0021DCD5 /* Extensions.swift in Sources */,

@@ -7,45 +7,178 @@
 //
 
 import UIKit
+import ChameleonFramework
 
 class MainViewController: UIViewController {
 
     
     //MARK: - ======IBOutlets=========
     @IBOutlet weak var transactionTable: UITableView!
+    @IBOutlet weak var totalLabel: UILabel!
+    @IBOutlet weak var surplusLabel: UILabel!
     
     
     //MARK: - ======Variables=========
     
     //MARK: Managers, etc
     let prefs = Prefs()
+    
+    //MARK: Variables to pass
+    var transactionSelected:Transaction?
 
     //MARK: - ===========SETUP===========
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        //-- assign D&D
+        self.transactionTable.dataSource = self
+        self.transactionTable.delegate = self
+        
+        //-- register cell
+        self.transactionTable.register(UINib(nibName:"TransactionCell", bundle:nil), forCellReuseIdentifier: "TransactionCell")
+        
+        //-- Update UI
+        self.updateUI()
     }
 
 
     
     //MARK: - ===========BUTTONS===========
     @IBAction func populatePressed(_ sender: Any) {
+        self.prefs.dataManager.updateTotal(all: true)
+        self.updateUI()
     }
     
     @IBAction func newtransactionPressed(_ sender: Any) {
+        self.presentView(withIdentifier: "NewTransaction")
+    }
+    
+    //MARK: - ===========REFRESH AND UPDATE UI===========
+    func refresh () {
+        self.prefs.dataManager.sortTransactions()
+        self.prefs.dataManager.updateTotal()
+        self.updateUI()
+    }
+    
+    func updateUI() {
+        self.surplusLabel.text = self.prefs.dataManager.account.currencySymbol + String(self.prefs.dataManager.account.surplus)
+        self.totalLabel.text = self.prefs.dataManager.account.currencySymbol + String(self.currentAmount())
+        self.transactionTable.reloadData()
+    }
+    
+    func currentAmount()-> Int {
+        
+        //-- Get current date
+        var currentPeriod = Date().adjusted(by: self.prefs.dataManager.account.daysEnd).dateInt()
+        
+        //TODO: Adjust for other types
+        return self.prefs.dataManager.account.amount + (self.prefs.dataManager.transactions[currentPeriod]!["Total"] as? Int ?? self.prefs.dataManager.account.amount)
+    
+    }
+    
+    //MARK: - ===========PRESENTVIEW===========
+    func presentView(withIdentifier identifier:String) {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let controller = storyboard.instantiateViewController(withIdentifier: identifier)
+        
+        //-- NEW TRANSACTION
+        if let destinationVC = controller as? NewTransactionVC {
+            destinationVC.prefs = self.prefs
+            destinationVC.mainView = self
+            destinationVC.modalPresentationStyle = .popover
+            
+            //-- Set transaction if edit
+            if self.transactionSelected != nil {
+                destinationVC.transaction = self.transactionSelected!
+                transactionSelected = nil
+            }
+        }
+        
+        //Present VC
+        self.present(controller, animated:true, completion:nil)
     }
     
 }
 //MARK: - ===========TABLEVIEW===========
 extension MainViewController : UITableViewDelegate, UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        //TODO: number in tv
-        return 0
+    
+    //MARK: - SET NUMBER OF ROWS/SECTIONS
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return self.prefs.dataManager.transactionKeys.count
     }
     
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+
+        return (self.prefs.dataManager.transactions[self.prefs.dataManager.transactionKeys[section]]!["Transactions"] as! [Transaction]).count
+    }
+    
+    //MARK: - SET CELL CONTENT
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = self.tableView(tableView, cellForRowAt: indexPath)
-        //TODO: Make cell
+        
+        //-- create cell & get transaction
+        let cell = tableView.dequeueReusableCell(withIdentifier: "TransactionCell") as! TransactionCell
+        
+        let date = self.prefs.dataManager.transactionKeys[indexPath.section]
+        guard let dateothingo = self.prefs.dataManager.transactions[date]! as? [String:Any] else {fatalError("couldn't unwrap dictionary for \(date)")}
+        guard let transactions = dateothingo["Transactions"] as? [Transaction] else {fatalError("couldn't get transactions from \(dateothingo)")}
+        
+        let transaction = transactions[indexPath.row]
+        
+        
+        // -- get amount string
+        var amount = ""
+        if transaction.amount < 0 {
+            amount = "-" + self.prefs.dataManager.account.currencySymbol + String(abs(transaction.amount))
+        } else {
+            amount = "+" + self.prefs.dataManager.account.currencySymbol + String(abs(transaction.amount))
+        }
+        cell.backgroundColor = transaction.category.first!.color.withAlphaComponent(0.7)
+        
+        //-- update cell UI
+        cell.amountLabel.text = amount
+        cell.nameLabel.text = transaction.name
+        return cell
+    }
+    
+    //MARK: - SET HEADER
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 30
+    }
+    
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        //let header = UIView()
+        let cell = tableView.dequeueReusableCell(withIdentifier: "TransactionCell") as! TransactionCell
+        
+        //-- GET SECTION
+        let key = self.prefs.dataManager.transactionKeys[section]
+        let section = self.prefs.dataManager.transactions[key]!
+        
+        
+        
+        //-- CALCULATE TOTAL
+        var totalString = ""
+        guard let sectionTotal = section["Total"] as? Int else {fatalError("not an int \(section["Total"])")}
+        
+        if sectionTotal < 0 {
+            totalString = "-" + self.prefs.dataManager.account.currencySymbol + String(abs(sectionTotal))
+        } else {
+            totalString = "+" + self.prefs.dataManager.account.currencySymbol + String(abs(sectionTotal))
+        }
+
+        //-- Set label position
+        cell.nameLabel.center.y = 15
+        cell.amountLabel.center.y = 15
+        
+        //-- Set label color
+        cell.nameLabel.textColor = UIColor(hexString: "#D7D5B4")
+        cell.amountLabel.textColor = UIColor(hexString: "#D7D5B4")
+        cell.nameLabel.text = key.toDateString()
+        cell.amountLabel.text = totalString
+        
+        //-- Set Cell color
+        cell.alpha = 0.9
+        cell.backgroundColor = UIColor(hexString: "#423F3F")
+        
         return cell
     }
     
