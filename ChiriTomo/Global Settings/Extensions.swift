@@ -40,14 +40,23 @@ extension Date {
         let day = calendar.component(.day, from: self)
         let hour = calendar.component(.hour, from: self)
         let minute = calendar.component(.minute, from: self)
-        return [year, month, day, hour, minute]
+        let weekday = calendar.component(.weekday, from: self)
+        return [year, month, day, hour, minute, weekday]
     }
     
-    func dateInt(adjustedBy daysEnd:Int? = nil)-> Int {
+    func dateInt(forAccountType accountType:AccountType, adjustedBy daysEnd:Int? = nil)-> Int {
         var components = self.components()
         
         if let end = daysEnd {
            components = self.adjusted(by: end).components()
+        }
+        switch accountType {
+        case .weekly:
+            components = self.addingTimeInterval(TimeInterval(-((components[5] - 1) * 24 * 60 * 60))).components()
+        case .monthly:
+            components = [components[0], components[1], 1]
+        default:
+            break
         }
         
        return [components[0], components[1], components[2]].merge()
@@ -104,28 +113,18 @@ extension String {
 extension Int {
     func toDateString()-> String {
         let str = String(self)
-        var dateString = ""
-        if self > 2000 {
-            dateString += str.subString(from: 0, to: 3)
-        }
-        if self > 200000 {
-            dateString += "-" + str.subString(from: 4, to: 5)
-        }
-        if self > 20000100 {
-             dateString += "-" + str.subString(from: 6, to: 7)
-        }
-        return dateString
+        return str.subString(from: 0, to: 3) + "-" + str.subString(from: 4, to: 5) + "-" + str.subString(from: 6, to: 7)
     }
     
     func toDate()-> Date {
-        var dateString = self.toDateString()
+        let dateString = self.toDateString()
         
         
-        if dateString.count == 7 {
-            dateString += "-01"
-        } else if dateString.count == 4 {
-            dateString += "-01"
-        }
+//        if dateString.count == 7 {
+//            dateString += "-01"
+//        } else if dateString.count == 4 {
+//            dateString += "-01"
+//        }
         
         return dateString.date() ?? Date()
     }

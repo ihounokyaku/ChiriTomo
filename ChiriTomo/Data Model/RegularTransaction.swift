@@ -19,7 +19,7 @@ class RegularTransaction : Object {
         get {
             //TODO: Adjust for other types
             print("going to get recent")
-            let startDate = Date().addingTimeInterval(-30 * 60 * 60).dateInt()
+            let startDate = Date().addingTimeInterval(-30 * 60 * 60).dateInt(forAccountType:self.account.first!.type)
             return self.account.first!.transactions.filter("(name == %@) AND (date >= %i)", self.name, startDate).count
             //return self.transactions.filter("date >= %i", startDate).count
         }

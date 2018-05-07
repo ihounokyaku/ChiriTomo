@@ -108,7 +108,7 @@ class NewTransactionVC: UIViewController {
         let category = self.subcategories[self.subcategoryPicker.selectedRow(inComponent: 0)]
         let daysEnd = self.prefs.dataManager.account.daysEnd
         //TODO: adjust for acct types
-        let todaysDate = Date().adjusted(by: daysEnd).dateInt()
+        let todaysDate = Date().adjusted(by: daysEnd).dateInt(forAccountType:self.prefs.dataManager.account.type)
         
         
         //-- Make sure total is updated
@@ -119,7 +119,7 @@ class NewTransactionVC: UIViewController {
             self.prefs.dataManager.adjustSurplus(by: -transaction.amount)
         }
         //-- if transaction is earlier than today update surplus
-        if self.datePicker.date.adjusted(by: daysEnd).dateInt() < todaysDate {
+        if self.datePicker.date.adjusted(by: daysEnd).dateInt(forAccountType:self.prefs.dataManager.account.type) < todaysDate {
             self.prefs.dataManager.adjustSurplus(by: amount)
         }
         

@@ -20,6 +20,7 @@ class DataManager:NSObject {
     //MARK: RESULTS
     var categories: Results<MainCategory>!
     var transactionsUnsorted: Results<Transaction>!
+    var accounts: Results<Account>!
     var transactions = [Int:NSMutableDictionary]()
     var transactionKeys = [Int]()
     
@@ -38,10 +39,12 @@ class DataManager:NSObject {
             self.account = acct
         } else {
             //TODO: deal with new account
-            self.account = self.newAccount(name: "TestAccount", amount: 500, startingAmount: 0, startDate:Date().addingTimeInterval(-45 * 24 * 60 * 60).dateInt(), accountType: .daily, currency: .THB)
+            self.account = self.newAccount(name: "TestAccount", amount: 500, startingAmount: 0, startDate:Date().addingTimeInterval(-45 * 24 * 60 * 60).dateInt(forAccountType:.daily), accountType: .daily, currency: .THB)
             self.prefs.set(self.account.name, forKey: "account")
         }
         
+        //-- Set Accounts
+        self.accounts = realm.objects(Account.self)
         
         //-- Update transactions and total
         self.sortTransactions()
@@ -66,11 +69,11 @@ class DataManager:NSObject {
         
         //TODO: - Figure in the start date
         let startDate = endDate.addingTimeInterval(Double(-numberOfDays * 24 * 60 * 60))
-        self.transactionKeys = self.dates(from: startDate, to: endDate.dateInt())
+        self.transactionKeys = self.dates(from: startDate, to: endDate.dateInt(forAccountType:self.account.type))
         
         
         //-- get all transactions within date range
-         self.transactionsUnsorted = self.account.transactions.filter("date >= %i", startDate.dateInt()).sorted(byKeyPath: "date", ascending: false)
+         self.transactionsUnsorted = self.account.transactions.filter("date >= %i", startDate.dateInt(forAccountType:self.account.type)).sorted(byKeyPath: "date", ascending: false)
         
         //-- Fill dic
         for dateInt in self.transactionKeys {
@@ -100,7 +103,7 @@ class DataManager:NSObject {
     
     func updateTotal(all:Bool = false) {
         //-- check if amount needs updating
-        let today = Date().adjusted(by: self.account.daysEnd).dateInt()
+        let today = Date().adjusted(by: self.account.daysEnd).dateInt(forAccountType:self.account.type)
         //-- TODO: - Adjust for different typess
         if self.account.lastUpdated < today || all {
 
@@ -123,7 +126,7 @@ class DataManager:NSObject {
             }
             
             //-- adjust for transactions
-            let transactions = self.account.transactions.filter("(date >= %i) AND (date < %i)", startDate.dateInt(), today)
+            let transactions = self.account.transactions.filter("(date >= %i) AND (date < %i)", startDate.dateInt(forAccountType:self.account.type), today)
             
             for transaction in transactions {
                 let amount = amountByDate[transaction.date] ?? self.account.amount
@@ -164,7 +167,7 @@ class DataManager:NSObject {
         
         //-- get starting dates
         var date = startDate
-        var dateInt = startDate.dateInt()
+        var dateInt = startDate.dateInt(forAccountType:self.account.type)
         
         while dateInt <= endDateInt {
             //-- add to array
@@ -172,7 +175,7 @@ class DataManager:NSObject {
             
             //-- todo sort by section
             date = date.addingTimeInterval(60 * 60 * 24)
-            dateInt = date.dateInt()
+            dateInt = date.dateInt(forAccountType:self.account.type)
         }
         
         return dates
@@ -227,7 +230,7 @@ class DataManager:NSObject {
         transaction.amount = amount
         transaction.note = note
         transaction.fullDate = date.adjusted(by: self.account.daysEnd)
-        transaction.date = date.dateInt(adjustedBy: self.account.daysEnd)
+        transaction.date = date.dateInt(forAccountType:self.account.type, adjustedBy: self.account.daysEnd)
         self.save(object: transaction)
         do {
             try realm.write {
@@ -284,7 +287,7 @@ class DataManager:NSObject {
                 transaction.amount = amount
                 transaction.note = note
                 transaction.fullDate = date
-                transaction.date = date.dateInt(adjustedBy: self.account.daysEnd)
+                transaction.date = date.dateInt(forAccountType:self.account.type, adjustedBy: self.account.daysEnd)
                 if !category.transactions.contains(transaction) {
                     if let oldCategory = transaction.category.first {
                         oldCategory.transactions.remove(at: oldCategory.transactions.index(of: transaction)!)

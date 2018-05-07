@@ -16,6 +16,7 @@ class MainViewController: UIViewController {
     @IBOutlet weak var transactionTable: UITableView!
     @IBOutlet weak var totalLabel: UILabel!
     @IBOutlet weak var surplusLabel: UILabel!
+    @IBOutlet weak var accountPicker: UIPickerView!
     
     
     //MARK: - ======Variables=========
@@ -33,6 +34,8 @@ class MainViewController: UIViewController {
         //-- assign D&D
         self.transactionTable.dataSource = self
         self.transactionTable.delegate = self
+        self.accountPicker.delegate = self
+        self.accountPicker.dataSource = self
         
         //-- register cell
         self.transactionTable.register(UINib(nibName:"TransactionCell", bundle:nil), forCellReuseIdentifier: "TransactionCell")
@@ -69,9 +72,9 @@ class MainViewController: UIViewController {
     func currentAmount()-> Int {
         
         //-- Get current date
-        var currentPeriod = Date().adjusted(by: self.prefs.dataManager.account.daysEnd).dateInt()
+        let currentPeriod = Date().adjusted(by: self.prefs.dataManager.account.daysEnd).dateInt(forAccountType: self.prefs.dataManager.account.type)
         
-        //TODO: Adjust for other types
+        
         return self.prefs.dataManager.account.amount + (self.prefs.dataManager.transactions[currentPeriod]!["Total"] as? Int ?? self.prefs.dataManager.account.amount)
     
     }
@@ -179,6 +182,8 @@ extension MainViewController : UITableViewDelegate, UITableViewDataSource {
         return cell
     }
     
+    
+    //MARK: - Actions
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let date = self.prefs.dataManager.transactionKeys[indexPath.section]
@@ -193,6 +198,32 @@ extension MainViewController : UITableViewDelegate, UITableViewDataSource {
         return transactions
     }
     
+    func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
+        let delete = UITableViewRowAction(style: .normal, title: "Delete") { (action, indexPath) in
+            
+            let date = self.prefs.dataManager.transactionKeys[indexPath.section]
+            let amount = self.transactions(fromDateInt: date)[indexPath.row].amount
+            self.self.prefs.dataManager.deleteObject(object: self.transactions(fromDateInt: date)[indexPath.row])
+            self.prefs.dataManager.adjustSurplus(by: -amount)
+            self.refresh()
+        }
+        delete.backgroundColor = UIColor(hexString: "#A5484A").withAlphaComponent(0.8)
+        return [delete]
+    }
+}
+
+extension MainViewController : UIPickerViewDelegate, UIPickerViewDataSource {
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return self.prefs.dataManager.accounts.count
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        return self.prefs.dataManager.accounts[row].name
+    }
     
 }
 

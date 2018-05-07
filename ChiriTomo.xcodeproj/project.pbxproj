@@ -25,6 +25,8 @@
 		C4CCB3202090C5CB0021DCD5 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CCB31F2090C5CB0021DCD5 /* Category.swift */; };
 		C4CCB3222090C6780021DCD5 /* Main Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CCB3212090C6780021DCD5 /* Main Category.swift */; };
 		C4CCB3242090C7C80021DCD5 /* Subcategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CCB3232090C7C80021DCD5 /* Subcategory.swift */; };
+		C4CEF50320A0C15A008616B3 /* NewAccountVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CEF50220A0C15A008616B3 /* NewAccountVC.swift */; };
+		C4CEF50520A0C8A7008616B3 /* Global Variables.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CEF50420A0C8A7008616B3 /* Global Variables.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -50,6 +52,8 @@
 		C4CCB31F2090C5CB0021DCD5 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
 		C4CCB3212090C6780021DCD5 /* Main Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Main Category.swift"; sourceTree = "<group>"; };
 		C4CCB3232090C7C80021DCD5 /* Subcategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Subcategory.swift; sourceTree = "<group>"; };
+		C4CEF50220A0C15A008616B3 /* NewAccountVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewAccountVC.swift; sourceTree = "<group>"; };
+		C4CEF50420A0C8A7008616B3 /* Global Variables.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Global Variables.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +91,7 @@
 			children = (
 				C4CCB3062090BAD00021DCD5 /* MainViewController.swift */,
 				C48A5A112092155700AEDB2A /* NewTransactionVC.swift */,
+				C4CEF50220A0C15A008616B3 /* NewAccountVC.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -113,9 +118,8 @@
 			isa = PBXGroup;
 			children = (
 				C4CCB3042090BACF0021DCD5 /* AppDelegate.swift */,
-				C4CCB3192090BF9C0021DCD5 /* Extensions.swift */,
+				C4CEF50620A0C950008616B3 /* Global Settings */,
 				C418E75C209D924300B1E3A3 /* Custom Views */,
-				C450930B2090D65100C95826 /* Prefs.swift */,
 				C4CCB3082090BAD00021DCD5 /* Main.storyboard */,
 				C422EA3A2092042C001F9B62 /* Controllers */,
 				C4CCB3182090BEF20021DCD5 /* Data Model */,
@@ -138,6 +142,16 @@
 				C45093092090D55E00C95826 /* DataManager.swift */,
 			);
 			path = "Data Model";
+			sourceTree = "<group>";
+		};
+		C4CEF50620A0C950008616B3 /* Global Settings */ = {
+			isa = PBXGroup;
+			children = (
+				C4CCB3192090BF9C0021DCD5 /* Extensions.swift */,
+				C450930B2090D65100C95826 /* Prefs.swift */,
+				C4CEF50420A0C8A7008616B3 /* Global Variables.swift */,
+			);
+			path = "Global Settings";
 			sourceTree = "<group>";
 		};
 		CEBF5DD29BD765BCFFAE16D3 /* Frameworks */ = {
@@ -230,7 +244,6 @@
 				"${BUILT_PRODUCTS_DIR}/ChameleonFramework/ChameleonFramework.framework",
 				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
 				"${BUILT_PRODUCTS_DIR}/RealmSwift/RealmSwift.framework",
-				"${BUILT_PRODUCTS_DIR}/SwipeCellKit/SwipeCellKit.framework",
 				"${BUILT_PRODUCTS_DIR}/TextFieldEffects/TextFieldEffects.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
@@ -238,7 +251,6 @@
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ChameleonFramework.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RealmSwift.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SwipeCellKit.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/TextFieldEffects.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -288,6 +300,7 @@
 			files = (
 				C450930C2090D65100C95826 /* Prefs.swift in Sources */,
 				C4CCB3072090BAD00021DCD5 /* MainViewController.swift in Sources */,
+				C4CEF50520A0C8A7008616B3 /* Global Variables.swift in Sources */,
 				C450930A2090D55E00C95826 /* DataManager.swift in Sources */,
 				C4CCB3052090BACF0021DCD5 /* AppDelegate.swift in Sources */,
 				C4CCB3202090C5CB0021DCD5 /* Category.swift in Sources */,
@@ -299,6 +312,7 @@
 				C4CCB3172090BE450021DCD5 /* Account.swift in Sources */,
 				C48A5A122092155700AEDB2A /* NewTransactionVC.swift in Sources */,
 				C4CCB31A2090BF9C0021DCD5 /* Extensions.swift in Sources */,
+				C4CEF50320A0C15A008616B3 /* NewAccountVC.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
