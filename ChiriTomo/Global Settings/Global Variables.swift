@@ -8,5 +8,15 @@
 
 import Foundation
 
-let AccountTypes:[AccountType] = [.daily, .monthly, .weekly]
-let Currencies:[Currency] = [.JPY, .USD, .THB]
+let AccountTypes:[AccountType] = [.daily, .weekly, .monthly]
+let Currencies:[String:Currency] = ["JPY":.JPY, "USD":.USD, "THB":.THB]
+var CurrencyKeys:[String] {
+    get {
+        var currencies = [String]()
+        for (key, _) in Currencies {
+            currencies.append(key)
+        }
+        return currencies.sorted()
+    }
+}
+

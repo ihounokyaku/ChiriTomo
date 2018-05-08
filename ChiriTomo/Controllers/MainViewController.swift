@@ -56,6 +56,12 @@ class MainViewController: UIViewController {
         self.presentView(withIdentifier: "NewTransaction")
     }
     
+    @IBAction func newAccountPressed(_ sender: Any) {
+        self.presentView(withIdentifier: "NewAccount")
+    }
+    
+    
+    
     //MARK: - ===========REFRESH AND UPDATE UI===========
     func refresh () {
         self.prefs.dataManager.sortTransactions()
@@ -84,7 +90,7 @@ class MainViewController: UIViewController {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         let controller = storyboard.instantiateViewController(withIdentifier: identifier)
         
-        //-- NEW TRANSACTION
+        //MARK: New Transaction
         if let destinationVC = controller as? NewTransactionVC {
             destinationVC.prefs = self.prefs
             destinationVC.mainView = self
@@ -95,6 +101,13 @@ class MainViewController: UIViewController {
                 destinationVC.transaction = self.transactionSelected!
                 self.transactionSelected = nil
             }
+        }
+        
+        //MARK: New Account
+        //TODO: MOVE THIS TO SETTINGS
+        if let destinationVC = controller as? NewAccountVC {
+            destinationVC.prefs = self.prefs
+            destinationVC.modalPresentationStyle = .popover
         }
         
         //Present VC

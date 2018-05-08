@@ -117,15 +117,7 @@ extension Int {
     }
     
     func toDate()-> Date {
-        let dateString = self.toDateString()
         
-        
-//        if dateString.count == 7 {
-//            dateString += "-01"
-//        } else if dateString.count == 4 {
-//            dateString += "-01"
-//        }
-        
-        return dateString.date() ?? Date()
+        return self.toDateString().date() ?? Date()
     }
 }

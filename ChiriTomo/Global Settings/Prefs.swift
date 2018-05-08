@@ -21,7 +21,6 @@ class Prefs : NSObject {
     //MARK: - INIT
     override init () {
         super.init()
-        print("initiating datamanager")
         
     }
     
