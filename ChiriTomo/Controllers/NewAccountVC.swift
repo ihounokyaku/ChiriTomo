@@ -35,11 +35,16 @@ class NewAccountVC: UIViewController {
     //MARK: - ==Managers/Delegates==
     var prefs = Prefs()
     
+    //TODO: Change to prefs
+    var mainView:MainViewController!
+    
+    
     //MARK: - ==Lists/Arrays==
     var currencyKeys = CurrencyKeys
     
     //MARK: - ==OtherVariables==
     var account:Account?
+    var datePickerPreviousValue:Date!
     
 //MARK: - ===========SETUP===========
     //MARK: - ==ViewDidLoad==
@@ -57,6 +62,10 @@ class NewAccountVC: UIViewController {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "HH:mm"
         dayRolloverPicker.date = dateFormatter.date(from: "04:00")!
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        self.startDatePicker.minimumDate = dateFormatter.date(from: "2017-01-01")
+        self.startDatePicker.addTarget(self, action: #selector(datePickerChanged(picker:)), for: .valueChanged)
+        self.datePickerPreviousValue = self.startDatePicker.date
         
         //MARK: UpdateUI
         self.populateFromAccount()
@@ -64,8 +73,8 @@ class NewAccountVC: UIViewController {
     }
     
     @IBAction func dateChanged(_ sender: Any) {
-        print(self.startDatePicker.date)
-        print(self.startDatePicker.date.dateInt(forAccountType: .daily))
+        print("THIS IS STILL ACTIVE!")
+       
     }
     //MARK: - ===========SAVE/CANCEL===========
     
@@ -80,8 +89,32 @@ class NewAccountVC: UIViewController {
     @IBAction func savePressed(_ sender: Any) {
         //TODO: Save Account
         
-        //MARK: 
+        //MARK: Declare / Adjust variables
+        var startingSurplus = 0
+        if let surplus = Int(self.startingSurplusField.text!){
+            startingSurplus = surplus
+        }
+        let accountType = AccountTypes[self.frequencyPicker.selectedRow(inComponent: 0)]
+        let startDate = self.startDatePicker.date.dateInt(forAccountType: accountType)
+        let amount = Int(self.amountField.text!)!
+        let currency = Currencies[self.currencyKeys[self.currencyPicker.selectedRow(inComponent: 0)]]!
+        let daysEnd = dayRolloverPicker.date.timeInt()
         
+        //MARK: check if in edit mode and if so update
+        if let account = self.account {
+            self.prefs.dataManager.updateAccount(account: account, name: self.nameField.text!, amount: amount, startingAmount: startingSurplus, startDate: startDate, daysEnd:daysEnd, accountType: accountType, currency: currency)
+        } else {
+            //MARK: if not edit save account
+            self.account = self.prefs.dataManager.newAccount(name: self.nameField.text!, amount: amount, startingAmount: startingSurplus, startDate: startDate, daysEnd:daysEnd, accountType: accountType, currency: currency)
+        }
+        
+        //MARK: Dismiss and switch to account
+        self.prefs.dataManager.setAccount(account: self.account!)
+        self.dismiss(animated: true) {
+            self.mainView.prefs = self.prefs
+            self.mainView.setAccountPicker()
+            self.mainView.refresh()
+        }
     }
     
     //MARK: - ===========UpdateUI===========
@@ -96,12 +129,24 @@ class NewAccountVC: UIViewController {
     }
     
     func toggleSave() {
-        if self.amountField.text != "" && self.nameField.text != "" {
-            self.saveButton.isEnabled = false
-        } else {
+        if let int = Int(self.amountField.text!), int > 0, self.nameField.text != "" {
             self.saveButton.isEnabled = true
+        } else {
+            self.saveButton.isEnabled = false
         }
     }
+    
+    //MARK: - ==Set DatePicker==
+    func setDatePickerInterval(direction:String) {
+        print(startDatePicker.date)
+        let frequency = AccountTypes[self.frequencyPicker.selectedRow(inComponent: 0)]
+        var newDate = self.startDatePicker.date.closestDate(forFrequency: frequency)[direction]!
+        if newDate > self.startDatePicker.maximumDate! {
+            newDate = self.startDatePicker.date.closestDate(forFrequency: frequency)["Down"]!
+        }
+        self.startDatePicker.date = newDate
+    }
+    
 }
 
 //MARK: - ===========PICKERVIEWS===========
@@ -121,13 +166,35 @@ extension NewAccountVC : UIPickerViewDelegate, UIPickerViewDataSource {
         }
     }
     
-    //MARK: - ==Delegate Methods==
+    //MARK: - ==Display==
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
         if pickerView == self.currencyPicker {
             return Currencies[currencyKeys[row]]!.rawValue + " " + currencyKeys[row]
         } else {
             return AccountTypes[row].rawValue
         }
+    }
+    
+    //MARK: - ==Delegate==
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        if pickerView == self.frequencyPicker {
+            let frequency = AccountTypes[row]
+            self.startDatePicker.maximumDate = Date().closestDate(forFrequency: frequency)["Down"]!
+            self.startDatePicker.date = self.startDatePicker.date.closestDate(forFrequency: frequency)["Down"]!
+        }
+    }
+    
+    //MARK: - ==DatePicker==
+    @objc func datePickerChanged(picker:UIDatePicker) {
+        print("old date is \(self.datePickerPreviousValue) startdate is \(self.startDatePicker.date)")
+        var direction = "Down"
+        if self.datePickerPreviousValue! < startDatePicker.date {
+            direction = "Up"
+        }
+        print("\(direction)")
+        self.setDatePickerInterval(direction: direction)
+        
+        self.datePickerPreviousValue = startDatePicker.date
     }
     
 }

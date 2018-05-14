@@ -39,7 +39,7 @@ class DataManager:NSObject {
             self.account = acct
         } else {
             //TODO: deal with new account
-            self.account = self.newAccount(name: "TestAccount", amount: 500, startingAmount: 0, startDate:Date().addingTimeInterval(-45 * 24 * 60 * 60).dateInt(forAccountType:.daily), accountType: .daily, currency: .THB)
+            self.account = self.newAccount(name: "TestAccount", amount: 500, startingAmount: 0, startDate:Date().addingTimeInterval(-45 * 24 * 60 * 60).dateInt(forAccountType:.daily), daysEnd:0400, accountType: .daily, currency: .THB)
             self.prefs.set(self.account.name, forKey: "account")
         }
         
@@ -51,24 +51,34 @@ class DataManager:NSObject {
         self.updateTotal()
     }
     
-    //MARK: - ==============SORT RESULTS===============
+    //MARK: - ==============GET RESULTS/VARIABLES===============
+    
+    //MARK: - ==Sort==
     
     func sortTransactions() {
     
-        //-- Adjust arrays
-        var numberOfDays = 30
-        
-        //TODO: Adjust for other account types
-
-        //-- empty arrays
+        //MARK: empty arrays
         self.transactions = [:]
         self.transactionKeys = []
         
-        //-- get adjusted start and end dates
+        //MARK: get adjusted start and end dates
         let endDate = Date().adjusted(by: self.account.daysEnd)
+        var startDate:Date!
+        let accountStartDate = account.startDate.toDate()
         
-        //TODO: - Figure in the start date
-        let startDate = endDate.addingTimeInterval(Double(-numberOfDays * 24 * 60 * 60))
+        switch self.account.type {
+        case .daily:
+            startDate = endDate.addingTimeInterval(-30 * 24 * 60 * 60)
+        case .monthly:
+            startDate = endDate.stepDown(by: 12, forAccountType: .monthly)
+        case .weekly:
+            startDate = endDate.addingTimeInterval(-24 * 7 * 24 * 60 * 60)
+        }
+        if startDate < accountStartDate {
+            startDate = accountStartDate
+        }
+        
+        //MARK: Get All Keys and fill in Dictionary
         self.transactionKeys = self.dates(from: startDate, to: endDate.dateInt(forAccountType:self.account.type))
         
         
@@ -85,7 +95,7 @@ class DataManager:NSObject {
         //-- Fill in transaction info
         for transaction in transactionsUnsorted {
             
-            var date = transaction.date
+            let date = transaction.date
             //TODO - Adjust for other types
             
             //-- append to transactions
@@ -159,6 +169,13 @@ class DataManager:NSObject {
         return self.account.regularTransactions.sorted(by: {$0.numberOfRecentTransactions > $1.numberOfRecentTransactions})
     }
     
+    //MARK: - == Set ==
+    
+    func setAccount(account:Account) {
+        self.account = account
+        self.prefs.set(self.account.name, forKey: "account")
+    }
+    
     
 
     //MARK: GET DATES
@@ -167,15 +184,14 @@ class DataManager:NSObject {
         
         //-- get starting dates
         var date = startDate
-        var dateInt = startDate.dateInt(forAccountType:self.account.type)
+        var dateInt = startDate.dateInt()
         
         while dateInt <= endDateInt {
             //-- add to array
             dates.append(dateInt)
             
-            //-- todo sort by section
-            date = date.addingTimeInterval(60 * 60 * 24)
-            dateInt = date.dateInt(forAccountType:self.account.type)
+            date = date.stepUp(forAccountType: self.account.type)
+            dateInt = date.dateInt()
         }
         
         return dates
@@ -194,7 +210,7 @@ class DataManager:NSObject {
         }
     }
     
-    func newAccount(name:String, amount:Int, startingAmount:Int, startDate:Int, accountType:AccountType, currency:Currency)-> Account {
+    func newAccount(name:String, amount:Int, startingAmount:Int, startDate:Int, daysEnd:Int, accountType:AccountType, currency:Currency)-> Account {
         let account = Account()
         account.name = name
         account.amount = amount
@@ -321,6 +337,22 @@ class DataManager:NSObject {
     
     func appendTransactionToRegular(transaction:Transaction) {
         
+    }
+    
+    func updateAccount(account:Account, name:String, amount:Int, startingAmount:Int, startDate:Int, daysEnd:Int, accountType:AccountType, currency:Currency) {
+        do {
+            try realm.write {
+                account.name = name
+                account.amount = amount
+                account.startingAmount = startingAmount
+                account.startDate = startDate
+                account.type = accountType
+                account.currency = currency
+                account.lastUpdated = startDate
+            }
+        } catch {
+            print("error updating account\(error)")
+        }
     }
     
     //MARK: - DESTROY

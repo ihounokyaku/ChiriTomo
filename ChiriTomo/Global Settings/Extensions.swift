@@ -44,7 +44,7 @@ extension Date {
         return [year, month, day, hour, minute, weekday]
     }
     
-    func dateInt(forAccountType accountType:AccountType, adjustedBy daysEnd:Int? = nil)-> Int {
+    func dateInt(forAccountType accountType:AccountType = .daily, adjustedBy daysEnd:Int? = nil)-> Int {
         var components = self.components()
         
         if let end = daysEnd {
@@ -62,6 +62,12 @@ extension Date {
        return [components[0], components[1], components[2]].merge()
     }
     
+    func timeInt()-> Int {
+        var components = self.components()
+        
+        return [components[3], components[4]].merge()
+    }
+    
     func adjusted(by daysEnd:Int)-> Date {
         var components = self.components()
         var date = self
@@ -71,6 +77,85 @@ extension Date {
         
         return date
     }
+    
+    func closestDate(forFrequency frequency:AccountType)-> [String:Date] {
+        let components = self.components()
+        switch frequency {
+        case .weekly:
+            if components[5] > 1 {
+                return ["Up":self.addingTimeInterval(TimeInterval((8 - components[5]) * 24 * 60 * 60)), "Down":self.addingTimeInterval(TimeInterval((1 - components[5]) * 24 * 60 * 60))]
+            }
+        case .monthly:
+            
+            if components[2] > 1 {
+                var upMonth = components[1]
+                var upYear = components[0]
+                
+                    if upMonth < 12 {
+                        upMonth += 1
+                    } else {
+                        upMonth = 1
+                        upYear += 1
+                    }
+                let upString = (String(upYear) + "-" + String(format:"%02d", upMonth) + "-01" + " " + String(format:"%02d", components[3]) + ":" + String(format:"%02d", components[4]))
+                
+                return ["Up":upString.date(format:"yyyy-MM-dd HH:mm")!, "Down":self.addingTimeInterval(TimeInterval((1 - components[2]) * 24 * 60 * 60))]
+            }
+            
+        default:
+            break
+        }
+        return ["Up":self, "Down":self]
+    }
+    
+    //Mark: - Step up and down
+    func stepUp(by multiplier:Int = 1, forAccountType type:AccountType)-> Date {
+        if type == .weekly {
+            return self.addingTimeInterval(7 * Double(multiplier) * 60 * 60 * 24)
+        } else if type == .monthly {
+            let components = self.components()
+            var month = components[1]
+            var year = components[0]
+            
+            for _ in 0..<multiplier {
+                if month < 12 {
+                    month += 1
+                } else {
+                    month = 1
+                    year += 1
+                }
+            }
+            let dateString = (String(year) + "-" + String(format:"%02d", month) + "-01")
+            return dateString.date()!
+        }
+        return self.addingTimeInterval(60 * 60 * 24)
+    }
+    
+    func stepDown(by multiplier:Int = 1, forAccountType type:AccountType)-> Date {
+        if type == .weekly {
+            return self.addingTimeInterval(-7 * Double(multiplier) * 60 * 60 * 24)
+        } else if type == .monthly {
+            let components = self.components()
+            var month = components[1]
+            var year = components[0]
+            
+            for _ in 0..<multiplier {
+                if month > 1 {
+                    month -= 1
+                } else {
+                    month = 12
+                    year -= 1
+                }
+            }
+
+            let dateString = (String(year) + "-" + String(format:"%02d", month) + "-01")
+            return dateString.date()!
+        }
+        return self.addingTimeInterval(-60 * 60 * 24)
+    }
+    
+    
+    
 }
 
 
@@ -121,3 +206,5 @@ extension Int {
         return self.toDateString().date() ?? Date()
     }
 }
+
+

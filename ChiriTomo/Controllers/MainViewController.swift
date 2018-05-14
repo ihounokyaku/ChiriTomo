@@ -22,7 +22,7 @@ class MainViewController: UIViewController {
     //MARK: - ======Variables=========
     
     //MARK: Managers, etc
-    let prefs = Prefs()
+    var prefs = Prefs()
     
     //MARK: Variables to pass
     var transactionSelected:Transaction?
@@ -42,6 +42,7 @@ class MainViewController: UIViewController {
         
         //-- Update UI
         self.updateUI()
+        
     }
 
 
@@ -67,6 +68,11 @@ class MainViewController: UIViewController {
         self.prefs.dataManager.sortTransactions()
         self.prefs.dataManager.updateTotal()
         self.updateUI()
+    }
+    
+    func setAccountPicker() {
+        self.accountPicker.reloadComponent(0)
+        self.accountPicker.selectRow(self.prefs.dataManager.accounts.index(of: self.prefs.dataManager.account)!, inComponent: 0, animated: false)
     }
     
     func updateUI() {
@@ -107,6 +113,7 @@ class MainViewController: UIViewController {
         //TODO: MOVE THIS TO SETTINGS
         if let destinationVC = controller as? NewAccountVC {
             destinationVC.prefs = self.prefs
+            destinationVC.mainView = self
             destinationVC.modalPresentationStyle = .popover
         }
         
@@ -225,6 +232,9 @@ extension MainViewController : UITableViewDelegate, UITableViewDataSource {
     }
 }
 
+//MARK: - =========ACCOUNT PICKER==========
+
+//MARK: - ==Data Source==
 extension MainViewController : UIPickerViewDelegate, UIPickerViewDataSource {
     func numberOfComponents(in pickerView: UIPickerView) -> Int {
         return 1
@@ -236,6 +246,12 @@ extension MainViewController : UIPickerViewDelegate, UIPickerViewDataSource {
     
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
         return self.prefs.dataManager.accounts[row].name
+    }
+    
+    //MARK: - ==Delegate==
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        self.prefs.dataManager.account = self.prefs.dataManager.accounts[row]
+        self.refresh()
     }
     
 }
