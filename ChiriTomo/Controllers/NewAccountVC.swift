@@ -9,7 +9,7 @@
 import UIKit
 import TextFieldEffects
 
-class NewAccountVC: UIViewController {
+class NewAccountVC: MainViewDelegate {
     
     //MARK: - ===========IBOUTLETS===========
     
@@ -33,10 +33,6 @@ class NewAccountVC: UIViewController {
     //MARK: - ===========VARIABLES===========
     
     //MARK: - ==Managers/Delegates==
-    var prefs = Prefs()
-    
-    //TODO: Change to prefs
-    var mainView:MainViewController!
     
     
     //MARK: - ==Lists/Arrays==
@@ -99,14 +95,10 @@ class NewAccountVC: UIViewController {
         let amount = Int(self.amountField.text!)!
         let currency = Currencies[self.currencyKeys[self.currencyPicker.selectedRow(inComponent: 0)]]!
         let daysEnd = dayRolloverPicker.date.timeInt()
+
         
-        //MARK: check if in edit mode and if so update
-        if let account = self.account {
-            self.prefs.dataManager.updateAccount(account: account, name: self.nameField.text!, amount: amount, startingAmount: startingSurplus, startDate: startDate, daysEnd:daysEnd, accountType: accountType, currency: currency)
-        } else {
-            //MARK: if not edit save account
-            self.account = self.prefs.dataManager.newAccount(name: self.nameField.text!, amount: amount, startingAmount: startingSurplus, startDate: startDate, daysEnd:daysEnd, accountType: accountType, currency: currency)
-        }
+       //MARK:save account
+        self.account = self.prefs.dataManager.newAccount(name: self.nameField.text!, amount: amount, startingAmount: startingSurplus, startDate: startDate, daysEnd:daysEnd, accountType: accountType, currency: currency)
         
         //MARK: Dismiss and switch to account
         self.prefs.dataManager.setAccount(account: self.account!)
@@ -134,6 +126,13 @@ class NewAccountVC: UIViewController {
         } else {
             self.saveButton.isEnabled = false
         }
+    }
+    
+    //MARK: ==Hide Keyboard==
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
+        self.toggleSave()
+        
     }
     
     //MARK: - ==Set DatePicker==

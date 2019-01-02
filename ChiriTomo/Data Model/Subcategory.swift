@@ -10,6 +10,7 @@ import Foundation
 import RealmSwift
 
 class Subcategory : Category {
+    @objc dynamic var id = ""
     
     let transactions = List<Transaction>()
     let regularTransactions = List<RegularTransaction>()

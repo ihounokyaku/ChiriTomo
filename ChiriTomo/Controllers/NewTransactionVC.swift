@@ -10,7 +10,7 @@ import UIKit
 import TextFieldEffects
 import RealmSwift
 
-class NewTransactionVC: UIViewController {
+class NewTransactionVC: MainViewDelegate {
 
     //MARK: - =========IBOUTLETS==========
     
@@ -35,8 +35,6 @@ class NewTransactionVC: UIViewController {
     
     //MARK: - =========VARIABLES==========
     
-    //MARK: Managers
-    var prefs = Prefs()
     
     //MARK: LISTS
     var subcategories = List<Subcategory>()
@@ -47,7 +45,7 @@ class NewTransactionVC: UIViewController {
     
     var transaction:Transaction?
     var regularTransaction:RegularTransaction?
-    var mainView:MainViewController!
+
 
     
     
@@ -161,7 +159,7 @@ class NewTransactionVC: UIViewController {
             self.nameField.text = transaction.name
             self.setAmount(from: transaction.amount)
             self.setCategory(fromSubcategory: transaction.category.first!)
-            self.datePicker.date = transaction.fullDate
+            self.datePicker.date = transaction.fullDate.date(format: "yyyy-MM-dd HH:mm")!
         }
     }
     

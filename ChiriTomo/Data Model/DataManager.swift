@@ -166,7 +166,13 @@ class DataManager:NSObject {
     }
     
     func regularTransactions() -> [RegularTransaction] {
-        return self.account.regularTransactions.sorted(by: {$0.numberOfRecentTransactions > $1.numberOfRecentTransactions})
+        let regularTransactions = self.account.regularTransactions.sorted(by: {$0.numberOfRecentTransactions > $1.numberOfRecentTransactions})
+        
+        for transaction in regularTransactions {
+            print("\(transaction.name) \(transaction.numberOfRecentTransactions) ")
+        }
+        return regularTransactions
+        
     }
     
     //MARK: - == Set ==
@@ -234,6 +240,7 @@ class DataManager:NSObject {
             let newSubcategory = Subcategory()
             newSubcategory.name = subcategoryName
             newSubcategory.colorHex = color
+            newSubcategory.id = subcategoryName + "\(Date().timeIntervalSince1970)"
             self.save(object: newSubcategory)
             category.subcategories.append(newSubcategory)
         }
@@ -245,7 +252,7 @@ class DataManager:NSObject {
         transaction.name = name
         transaction.amount = amount
         transaction.note = note
-        transaction.fullDate = date.adjusted(by: self.account.daysEnd)
+        transaction.fullDate = date.adjusted(by: self.account.daysEnd).toString()
         transaction.date = date.dateInt(forAccountType:self.account.type, adjustedBy: self.account.daysEnd)
         self.save(object: transaction)
         do {
@@ -302,7 +309,7 @@ class DataManager:NSObject {
                 transaction.name = name
                 transaction.amount = amount
                 transaction.note = note
-                transaction.fullDate = date
+                transaction.fullDate = date.toString()
                 transaction.date = date.dateInt(forAccountType:self.account.type, adjustedBy: self.account.daysEnd)
                 if !category.transactions.contains(transaction) {
                     if let oldCategory = transaction.category.first {
@@ -339,16 +346,10 @@ class DataManager:NSObject {
         
     }
     
-    func updateAccount(account:Account, name:String, amount:Int, startingAmount:Int, startDate:Int, daysEnd:Int, accountType:AccountType, currency:Currency) {
+    func updateAccountName(account:Account, name:String) {
         do {
             try realm.write {
                 account.name = name
-                account.amount = amount
-                account.startingAmount = startingAmount
-                account.startDate = startDate
-                account.type = accountType
-                account.currency = currency
-                account.lastUpdated = startDate
             }
         } catch {
             print("error updating account\(error)")
@@ -386,5 +387,68 @@ class DataManager:NSObject {
             self.newCategory(name: category["MainCategory"] as! String, color: category["color"] as! String, subCategories: category["SubCategories"] as! [String])
         }
         self.categories = realm.objects(MainCategory.self)
+    }
+    
+    //MARK: - ==========EXPORT DICTIONARIES==========
+    
+    
+    
+    func dictionary(fromTransaction transaction:Transaction)-> NSDictionary {
+        let transactionDic = dictionary(fromObject: transaction, withKeys: ["date", "amount", "name",  "note", "fullDate"])
+        transactionDic["category"] = transaction.category.first!.id
+        return transactionDic
+    }
+    
+    func dictionary(fromAccount account:Account)-> NSDictionary {
+        let dictionaries = NSMutableDictionary()
+        var transactions = [NSDictionary]()
+        var regularTransactions = [NSDictionary]()
+        var mainCategories = [NSDictionary]()
+        
+        
+        for transaction in account.transactions {
+            transactions.append(self.dictionary(fromTransaction: transaction))
+        }
+        for transaction in account.regularTransactions {
+            regularTransactions.append(self.dictionary(fromRegularTransaction: transaction))
+        }
+        for category in self.categories {
+            mainCategories.append(self.dictionary(fromCategory: category))
+        }
+        
+        dictionaries["Account"] = self.dictionary(fromObject: account, withKeys: ["name", "amount", "startingAmount", "surplus", "daysEnd", "lastUpdated", "startDate"])
+        dictionaries["Transactions"] = transactions
+        dictionaries["regularTransactions"] = regularTransactions
+        dictionaries["mainCategories"] = mainCategories
+        
+        return dictionaries
+    }
+    
+    func dictionary(fromCategory category:Category)-> NSDictionary {
+        let dic = self.dictionary(fromObject: category, withKeys: ["colorHex", "icon", "name"])
+        if let sub = category as? Subcategory {
+            dic["id"] = sub.id
+        } else if let main = category as? MainCategory {
+            var subcategories = [NSDictionary]()
+            for subcategory in main.subcategories {
+                subcategories.append(self.dictionary(fromCategory: subcategory))
+            }
+            dic["subcategories"] = subcategories
+        }
+        return dic
+    }
+    
+    func dictionary(fromRegularTransaction transaction:RegularTransaction)-> NSDictionary {
+        let transactionDic = dictionary(fromObject: transaction, withKeys: ["amount", "name", "numberOfTransactions"])
+        transactionDic["category"] = transaction.category.first!.id
+        return transactionDic
+    }
+    
+    func dictionary(fromObject object:Object, withKeys keys:[String])-> NSMutableDictionary{
+        let dictionary = NSMutableDictionary()
+        for key in keys {
+            dictionary[key] = object.value(forKey: key)!
+        }
+        return dictionary
     }
 }

@@ -18,8 +18,12 @@ class RegularTransaction : Object {
     @objc dynamic var numberOfRecentTransactions:Int {
         get {
             //TODO: Adjust for other types
-            print("going to get recent")
-            let startDate = Date().addingTimeInterval(-30 * 60 * 60).dateInt(forAccountType:self.account.first!.type)
+            
+            let startDate = Date().addingTimeInterval(-30 * 24 * 60 * 60).dateInt(forAccountType:self.account.first!.type)
+            print("start date \(startDate)")
+            let transactionsWithSameName = self.account.first!.transactions.filter("name == %@", self.name)
+            print("same name = \(transactionsWithSameName.count)")
+            
             return self.account.first!.transactions.filter("(name == %@) AND (date >= %i)", self.name, startDate).count
             //return self.transactions.filter("date >= %i", startDate).count
         }

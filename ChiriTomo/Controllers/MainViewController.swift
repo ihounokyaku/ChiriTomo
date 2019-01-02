@@ -9,6 +9,8 @@
 import UIKit
 import ChameleonFramework
 
+
+
 class MainViewController: UIViewController {
 
     
@@ -42,6 +44,7 @@ class MainViewController: UIViewController {
         
         //-- Update UI
         self.updateUI()
+        self.setAccountPicker()
         
     }
 
@@ -52,6 +55,12 @@ class MainViewController: UIViewController {
         self.prefs.dataManager.updateTotal(all: true)
         self.updateUI()
     }
+    
+    @IBAction func settingsPressed(_ sender: Any) {
+        self.presentView(withIdentifier: "Settings")
+    }
+    
+    
     
     @IBAction func newtransactionPressed(_ sender: Any) {
         self.presentView(withIdentifier: "NewTransaction")
@@ -94,30 +103,22 @@ class MainViewController: UIViewController {
     //MARK: - ===========PRESENTVIEW===========
     func presentView(withIdentifier identifier:String) {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        let controller = storyboard.instantiateViewController(withIdentifier: identifier)
-        
+        let controller = storyboard.instantiateViewController(withIdentifier: identifier) as! MainViewDelegate
+ 
         //MARK: New Transaction
         if let destinationVC = controller as? NewTransactionVC {
-            destinationVC.prefs = self.prefs
-            destinationVC.mainView = self
-            destinationVC.modalPresentationStyle = .popover
-            
+
             //-- Set transaction if edit
             if self.transactionSelected != nil {
                 destinationVC.transaction = self.transactionSelected!
                 self.transactionSelected = nil
             }
         }
-        
-        //MARK: New Account
-        //TODO: MOVE THIS TO SETTINGS
-        if let destinationVC = controller as? NewAccountVC {
-            destinationVC.prefs = self.prefs
-            destinationVC.mainView = self
-            destinationVC.modalPresentationStyle = .popover
-        }
-        
-        //Present VC
+
+        //MARK: Configure and Present VC
+        controller.prefs = self.prefs
+        controller.mainView = self
+        controller.modalPresentationStyle = .popover
         self.present(controller, animated:true, completion:nil)
     }
     
@@ -177,7 +178,7 @@ extension MainViewController : UITableViewDelegate, UITableViewDataSource {
         
         //-- CALCULATE TOTAL
         var totalString = ""
-        guard let sectionTotal = section["Total"] as? Int else {fatalError("not an int \(section["Total"])")}
+        guard let sectionTotal = section["Total"] as? Int else {fatalError("not an int \(String(describing: section["Total"]))")}
         
         if sectionTotal < 0 {
             totalString = "-" + self.prefs.dataManager.account.currencySymbol + String(abs(sectionTotal))
@@ -251,6 +252,7 @@ extension MainViewController : UIPickerViewDelegate, UIPickerViewDataSource {
     //MARK: - ==Delegate==
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         self.prefs.dataManager.account = self.prefs.dataManager.accounts[row]
+        UserDefaults.standard.setValue(self.prefs.dataManager.accounts[row].name, forKey: "account")
         self.refresh()
     }
     

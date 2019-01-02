@@ -44,6 +44,12 @@ extension Date {
         return [year, month, day, hour, minute, weekday]
     }
     
+    func toString()-> String{
+        let formatter = DateFormatter()
+        formatter.dateFormat =  "yyyy-MM-dd HH:mm"
+        return formatter.string(from: self)
+    }
+    
     func dateInt(forAccountType accountType:AccountType = .daily, adjustedBy daysEnd:Int? = nil)-> Int {
         var components = self.components()
         
